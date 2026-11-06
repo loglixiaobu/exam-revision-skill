@@ -1,0 +1,9 @@
+__pycache__/
+*.py[cod]
+.venv/
+.DS_Store
+# Keep private coursework and generated study packs out of the repository.
+course-materials/
+revision-output/
+课件/
+复习包*/

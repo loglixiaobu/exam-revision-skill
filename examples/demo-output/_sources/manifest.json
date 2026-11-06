@@ -1,0 +1,66 @@
+{
+  "schema_version": 1,
+  "source_root": "examples/demo-inputs",
+  "files": [
+    {
+      "id": "S001",
+      "file": "01-search.pdf",
+      "sha256": "0594bd2101c2d6acb057aafbb49c475b2ad20e439e5a24aeba91b34350b7c819",
+      "status": "extracted_with_warnings",
+      "warnings": [
+        "PDF仅提取文字；图表、公式、列阅读顺序尚未视觉验证"
+      ],
+      "units": [
+        {
+          "id": "S001:p0001",
+          "kind": "page",
+          "characters": 189
+        },
+        {
+          "id": "S001:p0002",
+          "kind": "page",
+          "characters": 298
+        }
+      ]
+    },
+    {
+      "id": "S002",
+      "file": "02-boundaries.docx",
+      "sha256": "85df5fd4602425d31d2153cb0d56e478ee0a5fe4a25a47590a9dcca706440485",
+      "status": "extracted",
+      "warnings": [],
+      "units": [
+        {
+          "id": "S002:b0001",
+          "kind": "paragraph",
+          "characters": 11
+        },
+        {
+          "id": "S002:b0002",
+          "kind": "paragraph",
+          "characters": 37
+        },
+        {
+          "id": "S002:b0003",
+          "kind": "paragraph",
+          "characters": 4
+        },
+        {
+          "id": "S002:b0004",
+          "kind": "paragraph",
+          "characters": 53
+        },
+        {
+          "id": "S002:b0005",
+          "kind": "table",
+          "characters": 19
+        },
+        {
+          "id": "S002:b0006",
+          "kind": "paragraph",
+          "characters": 39
+        }
+      ]
+    }
+  ]
+}
