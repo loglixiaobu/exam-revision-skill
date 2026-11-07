@@ -1,5 +1,8 @@
 import importlib.util
 import json
+import os
+import subprocess
+import sys
 import tempfile
 import unittest
 import zipfile
@@ -28,11 +31,24 @@ class Tests(unittest.TestCase):
             data=json.loads((out/'manifest.json').read_text());self.assertEqual(len(data['files']),2)
             self.assertEqual(data['files'][1]['status'],'unsupported')
             with self.assertRaises(ValueError):extract.run(src,out)
+    def test_ignore_editor_and_os_metadata(self):
+        with tempfile.TemporaryDirectory() as d:
+            root=Path(d);src=root/'in';src.mkdir();self.docx(src/'a.docx')
+            for name in ['~$a.docx','.DS_Store','Thumbs.db','desktop.ini']:(src/name).write_bytes(b'temp')
+            out=root/'out';self.assertEqual(extract.run(src,out),0)
+            files=json.loads((out/'manifest.json').read_text())['files']
+            self.assertEqual(len(files),1);self.assertEqual(files[0]['id'],'S001')
     def test_bad_file(self):
         with tempfile.TemporaryDirectory() as d:
             p=Path(d)/'bad.docx';p.write_text('not a zip');out=Path(d)/'out'
             self.assertEqual(extract.run(p,out),2)
             self.assertEqual(json.loads((out/'manifest.json').read_text())['files'][0]['status'],'failed')
+    def test_extract_cli_ascii_console(self):
+        with tempfile.TemporaryDirectory() as d:
+            root=Path(d);src=root/'中文.docx';self.docx(src);out=root/'复习包'
+            result=subprocess.run([sys.executable,str(ROOT/'scripts/extract_sources.py'),str(src),'--out',str(out)],env={**os.environ,'PYTHONIOENCODING':'ascii'},capture_output=True)
+            self.assertEqual(result.returncode,0,result.stderr)
+            self.assertEqual(json.loads(result.stdout)['extracted'],1)
     def test_missing_input(self):
         with tempfile.TemporaryDirectory() as d:
             with self.assertRaises(ValueError):extract.run(Path(d)/'missing',Path(d)/'out')

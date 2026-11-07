@@ -80,10 +80,9 @@ def run(source, out):
     if out.exists():
         raise ValueError('输出目录已存在；请使用新的目录，避免覆盖')
     paths = [source] if source.is_file() else sorted((p for p in source.rglob('*') if p.is_file() and not p.is_symlink()), key=lambda x: str(x).casefold())
+    paths = [p for p in paths if not p.name.startswith('~$') and p.name.casefold() not in {'.ds_store', 'thumbs.db', 'desktop.ini'}]
     files, md = [], ['# 提取来源（未经过视觉校对）\n']
     for n, path in enumerate(paths, 1):
-        if path.name.startswith('~$'):
-            continue
         sid = f'S{n:03d}'
         rel = path.name if source.is_file() else path.relative_to(source).as_posix()
         entry = {'id': sid, 'file': rel, 'sha256': None, 'status': 'unsupported', 'warnings': [], 'units': []}
@@ -106,11 +105,13 @@ def run(source, out):
     out.mkdir(parents=True)
     (out / 'manifest.json').write_text(json.dumps({'schema_version': 1, 'source_root': str(source), 'files': files}, ensure_ascii=False, indent=2), encoding='utf-8')
     (out / 'sources.md').write_text('\n'.join(md), encoding='utf-8')
-    print(json.dumps({'files': len(files), 'extracted': sum(f['status'].startswith('extracted') for f in files), 'failed': sum(f['status'] == 'failed' for f in files), 'unsupported': sum(f['status'] == 'unsupported' for f in files), 'output': str(out)}, ensure_ascii=False))
+    print(json.dumps({'files': len(files), 'extracted': sum(f['status'].startswith('extracted') for f in files), 'failed': sum(f['status'] == 'failed' for f in files), 'unsupported': sum(f['status'] == 'unsupported' for f in files), 'output': str(out)}, ensure_ascii=True))
     return 2 if any(f['status'] in {'failed', 'unsupported'} for f in files) else 0
 
 
 if __name__ == '__main__':
+    if hasattr(sys.stderr, 'reconfigure'):
+        sys.stderr.reconfigure(errors='backslashreplace')
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('input')
     parser.add_argument('--out', required=True)
