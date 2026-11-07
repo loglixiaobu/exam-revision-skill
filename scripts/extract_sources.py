@@ -153,8 +153,12 @@ def pptx_check_archive(z):
         raise PptxSafetyError('PPTX解压后超过100MiB保护阈值，请拆分材料')
     seen = set()
     for info in infos:
-        name = info.filename.rstrip('/')
-        if (not name or name.startswith('/') or '\\' in name or ':' in name
+        # ZipInfo.filename is already sanitized: Windows separators become
+        # '/' and a NUL truncates the name. Validate the original decoded ZIP
+        # name, not the platform-dependent alias, before trusting any member.
+        raw_name = info.orig_filename
+        name = raw_name[:-1] if raw_name.endswith('/') else raw_name
+        if (raw_name != info.filename or not name or name.startswith('/') or '\\' in name or ':' in name
                 or any(ord(c) < 32 for c in name)
                 or any(bit in {'', '.', '..'} for bit in name.split('/'))):
             raise PptxSafetyError('PPTX ZIP成员路径不安全，已拒绝路径穿越')

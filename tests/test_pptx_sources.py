@@ -296,13 +296,46 @@ class PptxSourceTests(unittest.TestCase):
         self.assertEqual(json.loads(result.stdout)['extracted'], 1)
 
     def test_path_traversal_in_archive_is_rejected_without_writing(self):
-        for name in ('../outside.txt', '/absolute.txt', 'ppt/../../outside.txt', 'ppt\\evil.xml', 'C:/evil.xml'):
+        for name in ('../outside.txt', '/absolute.txt', 'ppt/../../outside.txt', 'ppt\\evil.xml',
+                     'ppt/evil\x00.xml', 'ppt//', 'C:/evil.xml'):
             with self.subTest(name=name):
                 parts = basic_parts()
                 parts[name] = 'never write me'
+                write_pptx(self.path, parts, raw_names=True)
+                with zipfile.ZipFile(self.path) as archive:
+                    self.assertIn(name, [info.orig_filename for info in archive.infolist()])
+                # Verify the unsafe name was really serialized in both ZIP
+                # headers rather than normalized away by the fixture writer.
+                self.assertEqual(self.path.read_bytes().count(name.encode('utf-8')), 2)
                 with self.assertRaisesRegex(extract.PptxSafetyError, '路径'):
-                    self.read(parts)
+                    extract.pptx_units(self.path)
         self.assertFalse((self.root.parent / 'outside.txt').exists())
+
+    def test_raw_backslash_member_survives_fixture_writing_on_windows(self):
+        parts = basic_parts()
+        raw_name = 'ppt\\evil.xml'
+        parts[raw_name] = 'never write me'
+        # Exercise ZipInfo's actual Windows sanitation path on every CI OS.
+        with patch.object(zipfile.os, 'sep', '\\'), patch.object(zipfile.os, 'altsep', '/'):
+            write_pptx(self.path, parts, raw_names=True)
+            with zipfile.ZipFile(self.path) as archive:
+                info = next(info for info in archive.infolist() if info.orig_filename == raw_name)
+                self.assertEqual(info.filename, 'ppt/evil.xml')
+                self.assertEqual(info.orig_filename, raw_name)
+            with self.assertRaisesRegex(extract.PptxSafetyError, '路径'):
+                extract.pptx_units(self.path)
+
+    def test_raw_nul_member_is_rejected_before_zipinfo_truncation_hides_it(self):
+        parts = basic_parts()
+        raw_name = 'ppt/evil\x00.xml'
+        parts[raw_name] = 'never write me'
+        write_pptx(self.path, parts, raw_names=True)
+        with zipfile.ZipFile(self.path) as archive:
+            info = next(info for info in archive.infolist() if info.orig_filename == raw_name)
+            self.assertEqual(info.filename, 'ppt/evil')
+            self.assertEqual(info.orig_filename, raw_name)
+        with self.assertRaisesRegex(extract.PptxSafetyError, '路径'):
+            extract.pptx_units(self.path)
 
     def test_relationship_traversal_or_disguised_external_uri_fails_closed(self):
         for target in ('../../outside.xml', '/../../../outside.xml', '%2e%2e/%2e%2e/outside.xml',

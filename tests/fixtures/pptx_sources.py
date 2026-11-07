@@ -86,10 +86,21 @@ def basic_parts():
     }
 
 
-def write_pptx(path, parts=None, *, compression=zipfile.ZIP_DEFLATED):
+def write_pptx(path, parts=None, *, compression=zipfile.ZIP_DEFLATED, raw_names=False):
+    """Write test packages, optionally preserving unsafe member-name bytes.
+
+    ZipInfo's constructor sanitizes backslashes on Windows and NULs on every
+    platform. Assigning filename after construction keeps adversarial fixtures
+    identical across platforms in both local headers and the central directory.
+    """
     with zipfile.ZipFile(path, 'w', compression=compression) as archive:
         for name, value in (basic_parts() if parts is None else parts).items():
-            archive.writestr(name, value)
+            if raw_names:
+                info = zipfile.ZipInfo('raw-name-fixture')
+                info.filename = info.orig_filename = name
+                archive.writestr(info, value, compress_type=compression)
+            else:
+                archive.writestr(name, value)
 
 
 def mixed_pptx(path):
