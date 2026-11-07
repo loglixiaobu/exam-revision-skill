@@ -10,7 +10,7 @@ from pathlib import Path
 from urllib.parse import unquote, urlsplit
 
 
-UNIT_ID = re.compile(r'(S[0-9]+):([pb])([0-9]+)\Z')
+UNIT_ID = re.compile(r'(S[0-9]+):([pbsn])([0-9]+)\Z')
 SOURCE_ID = re.compile(r'S[0-9]+\Z')
 ESCAPE = re.compile(r'\\([' + re.escape(string.punctuation) + r'])')
 

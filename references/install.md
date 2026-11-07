@@ -20,7 +20,7 @@ python3 scripts/install.py --project "/path/to/your project" --verify
 python3 scripts/install.py --project "/path/to/your project" --verify --check-deps
 ```
 
-验证会逐文件比较本仓库与安装目录。重复安装相同版本不会重写文件。`--check-deps` 只报告 Python 和 `pypdf` 状态，不安装任何包；未满足 PDF 依赖时返回退出码 2。DOCX 解析和输出结构检查不依赖 `pypdf`。检查通过只证明文件一致及基础依赖可发现，不证明 Codex 已刷新技能列表或所有输入都能成功解析。
+验证会逐文件比较本仓库与安装目录。重复安装相同版本不会重写文件。`--check-deps` 只报告 Python 和 `pypdf` 状态，不安装任何包；未满足 PDF 依赖时返回退出码 2。DOCX/PPTX 解析和输出结构检查不依赖 `pypdf`。检查通过只证明文件一致及基础依赖可发现，不证明 Codex 已刷新技能列表或所有输入都能成功解析。
 
 安装后，在目标项目中开启新的 Codex 对话，要求使用 `exam-revision`。若技能列表尚未显示它，可以请 Codex 读取项目中的 `.agents/skills/exam-revision/SKILL.md` 并按其步骤工作。
 
