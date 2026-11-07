@@ -66,7 +66,10 @@ def _relative(value):
     path = PurePosixPath(value)
     if path.is_absolute() or any(p in ('', '.', '..') for p in value.split('/')):
         raise SessionError(f'Path must stay inside the pack: {value!r}')
-    if path.parts[0] == SESSION_DIR:
+    # These aliases can resolve to the same bookkeeping directory on Windows
+    # or a case-insensitive macOS volume. Reject them on every platform so a
+    # content checkpoint can never include (and then invalidate) its own state.
+    if path.parts[0].rstrip(' .').casefold() == SESSION_DIR:
         raise SessionError('Session bookkeeping cannot be recorded as study content')
     return value
 
@@ -419,8 +422,10 @@ def init(source, pack, mode=None, papers=None):
             'created_at': datetime.now(timezone.utc).isoformat(),
         }
         _validate(data, pack)
-        _save(pack, data)
         result = _inspect(pack, data)
+        if not result['ok']:
+            raise SessionError('Cannot initialize: files changed during the integrity check. Preserve all files and retry when writing stops')
+        _save(pack, data)
         result['created'] = True
         return result
 
@@ -468,11 +473,25 @@ def record(pack, phase, key, files, complete_phase=False, preserve_edits=False):
                 data['completed_phases'].sort(key=PHASES.index)
             data['revision'] += 1
             _validate(data, pack)
-            _save(pack, data)
         result = _inspect(pack, data)
+        if changed:
+            # Verify the proposed state before committing it, including new
+            # evidence. Previously the final scan ran after save, so a source
+            # edit or deleted output could leave a newly completed phase in
+            # an already-conflicted session. This remains a point-in-time
+            # check, not a lock against external editors after the scan.
+            permitted_conflicts = (
+                preserve_edits and not complete_phase
+                and inspection['can_continue_with_preserved_edits']
+                and result['can_continue_with_preserved_edits']
+                and set(result['output_changes']['changed']).issubset(
+                    inspection['output_changes']['changed']))
+            if not result['ok'] and not permitted_conflicts:
+                raise SessionError('Cannot record: files changed during the integrity check. No checkpoint was saved; preserve all files and retry when writing stops')
+            _save(pack, data)
         result['recorded'] = changed
         if preserve_edits and inspection['can_continue_with_preserved_edits']:
-            result['preserved_output_edits'] = inspection['output_changes']['changed']
+            result['preserved_output_edits'] = result['output_changes']['changed']
         return result
 
 

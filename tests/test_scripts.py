@@ -29,8 +29,9 @@ class Tests(unittest.TestCase):
             p = Path(d) / 'a.docx'
             self.docx(p)
             units, w = extract.docx_units(p)
-            self.assertEqual([x['kind'] for x in units], ['paragraph', 'table'])
+            self.assertEqual([x['kind'] for x in units], ['paragraph', 'table', 'paragraph'])
             self.assertIn('二分查找', units[0]['text'])
+            self.assertIn('OMML公式未转写', units[2]['text'])
             self.assertTrue(any(('OMML' in x for x in w)))
 
     def test_partial_and_no_overwrite(self):
