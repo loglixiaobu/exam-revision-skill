@@ -1,4 +1,5 @@
 import importlib.util
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -64,6 +65,79 @@ class SessionTests(unittest.TestCase):
         data = json.loads(self.state_path.read_text())
         self.assertEqual(set(data['source']['files']), {'01.pdf', '02.docx'})
         self.assertEqual(len(data['source']['files']['01.pdf']['sha256']), 64)
+
+    def stat_copy(self, info, **changes):
+        values = {name: getattr(info, name) for name in
+                  ('st_dev', 'st_ino', 'st_mode', 'st_size', 'st_mtime_ns', 'st_ctime_ns')}
+        values.update(changes)
+        return SimpleNamespace(**values)
+
+    def test_hash_accepts_different_handle_and_path_metadata(self):
+        path = self.source / '01.pdf'
+        info = path.lstat()
+        # Model Windows API differences: fstat may expose different IDs and
+        # lower timestamp precision. They are stable within the same API.
+        descriptor = self.stat_copy(
+            info, st_dev=info.st_dev + 1, st_ino=info.st_ino + 1,
+            st_mtime_ns=info.st_mtime_ns // 1_000_000_000 * 1_000_000_000,
+            st_ctime_ns=info.st_ctime_ns // 1_000_000_000 * 1_000_000_000)
+        expected = hashlib.sha256(path.read_bytes()).hexdigest()
+        with patch.object(session.os, 'fstat', return_value=descriptor) as fstat:
+            result = session._hash_file(path)
+        self.assertEqual(result, {'sha256': expected, 'size': info.st_size})
+        self.assertEqual(fstat.call_count, 3)
+
+    def test_hash_rejects_file_modified_during_read(self):
+        path = self.source / '01.pdf'
+        before = path.stat()
+        digest = hashlib.sha256()
+        changed = False
+
+        def update_and_modify(chunk):
+            nonlocal changed
+            digest.update(chunk)
+            if not changed:
+                changed = True
+                path.write_bytes(b'X' * before.st_size)
+                # Explicitly advance mtime so the regression does not depend
+                # on OS clock/filesystem timestamp granularity.
+                os.utime(path, ns=(before.st_atime_ns, before.st_mtime_ns + 2_000_000_000))
+
+        wrapper = SimpleNamespace(update=update_and_modify, hexdigest=digest.hexdigest)
+        with patch.object(session.hashlib, 'sha256', return_value=wrapper):
+            with self.assertRaisesRegex(session.SessionError, 'changed while being read'):
+                session._hash_file(path)
+
+    def test_hash_rejects_handle_metadata_changes(self):
+        path = self.source / '01.pdf'
+        before = path.lstat()
+        after = self.stat_copy(before, st_mtime_ns=before.st_mtime_ns + 100)
+        with patch.object(session.os, 'fstat', side_effect=[before, after]):
+            with self.assertRaisesRegex(session.SessionError, 'changed while being read'):
+                session._hash_file(path)
+
+    def test_hash_rejects_reopened_handle_identity_change(self):
+        path = self.source / '01.pdf'
+        before = path.lstat()
+        replaced = self.stat_copy(before, st_ino=before.st_ino + 1)
+        with patch.object(session.os, 'fstat', side_effect=[before, before, replaced]):
+            with self.assertRaisesRegex(session.SessionError, 'changed while being read'):
+                session._hash_file(path)
+
+    def test_hash_rejects_path_change_even_if_handle_metadata_is_coarse(self):
+        path = self.source / '01.pdf'
+        before = path.lstat()
+        changed = self.stat_copy(before, st_mtime_ns=before.st_mtime_ns + 100)
+        original_lstat = Path.lstat
+        with patch.object(session.os, 'fstat', return_value=before) as fstat:
+            def lstat_after_read(candidate):
+                if candidate == path and fstat.call_count >= 2:
+                    return changed
+                return original_lstat(candidate)
+
+            with patch.object(Path, 'lstat', lstat_after_read):
+                with self.assertRaisesRegex(session.SessionError, 'changed while being read'):
+                    session._hash_file(path)
 
     def test_single_file_input(self):
         result = session.init(self.source / '01.pdf', self.pack)

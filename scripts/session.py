@@ -78,7 +78,8 @@ def _separate(source, pack, kind):
 
 def _hash_file(path):
     _no_symlinks(path)
-    if not stat.S_ISREG(path.lstat().st_mode):
+    path_before = path.lstat()
+    if not stat.S_ISREG(path_before.st_mode):
         raise SessionError(f'Not a regular file: {path}')
     flags = (os.O_RDONLY | getattr(os, 'O_NOFOLLOW', 0)
              | getattr(os, 'O_BINARY', 0) | getattr(os, 'O_NONBLOCK', 0))
@@ -94,9 +95,22 @@ def _hash_file(path):
                 break
             digest.update(chunk)
         after = os.fstat(handle.fileno())
-        current = path.stat(follow_symlinks=False)
-        identity = lambda s: (s.st_dev, s.st_ino, s.st_size, s.st_mtime_ns, s.st_ctime_ns)
-        if identity(before) != identity(after) or identity(after) != identity(current):
+        _no_symlinks(path)
+        path_after = path.lstat()
+        # Windows fstat and path stat can expose different ID representations
+        # or timestamp precision for the same stable file. Compare each API
+        # only with itself, without rounding away real changes. A second open
+        # lets us compare handle identities and detect a replaced path too.
+        identity = lambda s: (s.st_dev, s.st_ino, s.st_mode, s.st_size, s.st_mtime_ns, s.st_ctime_ns)
+        if identity(before) != identity(after) or identity(path_before) != identity(path_after):
+            raise SessionError(f'File changed while being read; retry when writing stops: {path}')
+        verify_fd = os.open(path, flags)
+        try:
+            current_handle = os.fstat(verify_fd)
+        finally:
+            os.close(verify_fd)
+        if (identity(after) != identity(current_handle)
+                or identity(path_before) != identity(path.lstat())):
             raise SessionError(f'File changed while being read; retry when writing stops: {path}')
         return {'sha256': digest.hexdigest(), 'size': after.st_size}
 
