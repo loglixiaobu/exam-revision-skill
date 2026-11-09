@@ -1,0 +1,4 @@
+interface:
+  display_name: "期末复习 · Exam Revision"
+  short_description: "Turn course files into clear notes and practice papers"
+  default_prompt: "Use $exam-revision to turn my course materials into a detailed revision pack with approachable examples and three practice papers with separate answers."

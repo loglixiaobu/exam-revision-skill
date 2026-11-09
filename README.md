@@ -4,7 +4,7 @@
 
 把 **Word、PDF、PPTX 课件**整理成 Markdown 复习包：知识地图、好懂的讲解、例题、考前速查，以及默认 3 套练习卷。答案单独放，先做题时少一点“顺手偷看”。
 
-[中文](#中文) · [English](#english)
+[中文](#中文) · [English](#english) · [MIT License](LICENSE) · [CI](https://github.com/loglixiaobu/exam-revision-skill/actions/workflows/tests.yml)
 
 <a id="中文"></a>
 ## 中文
@@ -30,6 +30,8 @@ python scripts/install.py --project "你的课程项目目录" --install
 
 安装位置是 `项目/.agents/skills/exam-revision/`。安装脚本只复制必要文件，**不联网、不安装依赖、不修改已有安装**。相同版本无需重装；发现已有文件不同、缺失或多余时会停止，避免覆盖你改过的 Skill。升级可先在新项目试用，再确认迁移。
 
+早期版本可能缺少新增的 `LICENSE` 或 `agents/openai.yaml`，安装器也会停止。请保留旧目录，按[升级说明](references/install.md#已有安装和安全边界)备份后迁移，不要直接覆盖或补空文件。
+
 安装后，在目标项目中开启新的 Codex 对话。若技能列表还没显示，可请 Codex 读取 `.agents/skills/exam-revision/SKILL.md` 并按步骤工作。更多选项见[安装说明](references/install.md)。
 
 **WorkBuddy：**官方说明支持本地 Skill 包，可按技能管理界面导入包含 `SKILL.md` 的完整目录，别漏掉 `scripts/` 和 `references/`。不同版本的界面和依赖环境可能不同；本仓库尚未做 WorkBuddy 实机兼容验收，不承诺所有版本即装即用。
@@ -54,6 +56,8 @@ PPT 课件也可以这样说：
 | 上次没做完 | “继续复习包，先查看已有进度，从未完成的章节接着做，不要覆盖我改过的笔记。” |
 
 更多可复制的用法见[试用提示词](examples/试用提示词.md)。
+
+**第一次试用？** 先选熟悉的一章，照[本地试用清单](docs/local-testing.md)核对讲解、引用、答案和续做。项目仍在迭代，欢迎告诉我们哪一步不省心。
 
 ### PPT、Word、PDF，分别能读到哪里？
 
@@ -116,9 +120,19 @@ python -m unittest discover -s tests -v
 python scripts/check_pack.py examples/demo-output --mode both --papers 3
 ```
 
-GitHub Actions 配置会在 Ubuntu、Windows、macOS 上运行测试。**配置存在不代表三平台已通过**，请以对应提交的实际运行结果为准；脚本测试也不等于 Codex 或 WorkBuddy 应用级验收。
+GitHub Actions 配置会在 Ubuntu、Windows、macOS 的 Python 3.12 上运行测试，并在 Ubuntu 检查最低支持的 Python 3.10。**配置存在不代表三平台已通过**，请以对应提交的实际运行结果为准；脚本测试也不等于 Codex 或 WorkBuddy 应用级验收。
 
 测试范围和未验证项见[测试报告](TEST_REPORT.md)，技能入口为 [SKILL.md](SKILL.md)。
+
+### 帮它变得更好用
+
+安装卡住、讲解绕口、引用对不上？欢迎[反馈问题或建议](https://github.com/loglixiaobu/exam-revision-skill/issues/new/choose)。模板会提醒需要哪些信息，也欢迎直接用中文描述。**Issue 是公开的，请不要上传私人课件、个人笔记或完整复习包。** 参与开发见[贡献指南](CONTRIBUTING.md)。
+
+### 许可证与材料归属
+
+本项目的原创代码、说明和仓库内原创示例采用 [MIT 许可证](LICENSE)，可修改、分发和商用，需保留版权与许可声明；不提供担保。
+
+该许可**不会改变你输入的课件、第三方材料或生成内容中引用材料的权利归属**，也不自动授予公开复习包的权限。依赖项保留各自的许可证，宿主 AI 工具的使用与数据条款仍然适用。安装脚本会保留项目的 `LICENSE` 文件。
 
 官方安装参考：[Codex Skills](https://learn.chatgpt.com/docs/build-skills) · [WorkBuddy Skills](https://www.codebuddy.cn/docs/workbuddy/From-Beginner-to-Expert-Guide/Function-Description/Skills-Market)
 
@@ -154,6 +168,8 @@ python scripts/install.py --project "YOUR_COURSE_PROJECT" --install
 
 The destination is `PROJECT/.agents/skills/exam-revision/`. The installer copies only the required files. It **does not access the network, install dependencies, or modify an existing installation**. Identical files need no reinstall; changed, missing, or extra files make it stop rather than overwrite your work. For upgrades, try a new project first, then decide what to migrate.
 
+Older installations may lack the new `LICENSE` or `agents/openai.yaml`; the installer stops for those differences too. Keep the old directory, back it up and move it aside before installing, then compare and migrate your customizations. Do not overwrite it or add empty files to silence the check.
+
 Start a new Codex conversation in the target project after installation. If the Skill does not appear yet, ask Codex to read `.agents/skills/exam-revision/SKILL.md` and follow it. See the [installation guide](references/install.md) for more options.
 
 **WorkBuddy:** its official documentation supports local Skill packages. Use its skill-management interface to import the complete directory containing `SKILL.md`, including `scripts/` and `references/`. Interfaces and dependency environments may vary by version. This repository has not completed on-device WorkBuddy compatibility testing, so plug-and-play compatibility is not guaranteed.
@@ -178,6 +194,8 @@ No long setup form required. Unless you specify otherwise, the defaults are **de
 | Pick up where you stopped | “Continue the revision pack. Check saved progress first, resume unfinished chapters, and do not overwrite my edited notes.” |
 
 More examples are available in the [sample prompts](examples/试用提示词.md), in Chinese.
+
+**First try?** Use one familiar chapter and the [local testing checklist](docs/local-testing.md#english) to check explanations, citations, answers, and resuming. The project is still being refined; feedback about confusing steps is welcome.
 
 ### What can it read?
 
@@ -242,8 +260,18 @@ python -m unittest discover -s tests -v
 python scripts/check_pack.py examples/demo-output --mode both --papers 3
 ```
 
-GitHub Actions is configured to run tests on Ubuntu, Windows, and macOS. **A workflow file does not prove that all three platforms passed.** Check the actual runs for the relevant commit. Script tests are also not application-level acceptance tests for Codex or WorkBuddy.
+GitHub Actions is configured to run Python 3.12 tests on Ubuntu, Windows, and macOS, plus the minimum supported Python 3.10 on Ubuntu. **A workflow file does not prove that all three platforms passed.** Check the actual runs for the relevant commit. Script tests are also not application-level acceptance tests for Codex or WorkBuddy.
 
 See the [test report](TEST_REPORT.md) for tested scope and remaining gaps, and [SKILL.md](SKILL.md) for the Skill entry point. The supporting technical guides are currently in Chinese.
+
+### Help make it easier to use
+
+Installation trouble, a confusing explanation, or a citation that does not match? [Report a problem or suggestion](https://github.com/loglixiaobu/exam-revision-skill/issues/new/choose). The templates list useful details; Chinese and English are both welcome. **Issues are public. Do not upload private course materials, notes, or full revision packs.** See the [contribution guide](CONTRIBUTING.md#english) for development instructions.
+
+### License and course-material rights
+
+The project's original code, documentation, and included original examples use the [MIT License](LICENSE). You may modify, redistribute, and use them commercially while retaining the copyright and permission notices. No warranty is provided.
+
+This license **does not change rights in your input coursework, third-party materials, or material quoted in generated outputs**, and does not automatically authorize publishing a revision pack. Dependencies keep their own licenses; your host AI tool's terms and data policies still apply. The installer preserves the project's `LICENSE` file.
 
 Official installation references: [Codex Skills](https://learn.chatgpt.com/docs/build-skills) · [WorkBuddy Skills](https://www.codebuddy.cn/docs/workbuddy/From-Beginner-to-Expert-Guide/Function-Description/Skills-Market)

@@ -1,4 +1,13 @@
-# 验证报告：PPTX、安装与复习包质量
+# 验证报告：发布准备、PPTX、安装与复习包质量
+
+## 2026-11-09：许可证与发布准备
+
+本地 Linux / Python 3.12：**221 项测试，219 项通过，2 项 Windows 专用测试跳过**。另通过示例复习包结构检查、Skill 元数据检查和 `git diff --check`。此轮不改变提取、讲义生成或续做算法。
+
+- 安装清单从 11 项增加到 13 项，包含标准 MIT `LICENSE` 和 Codex UI 信息 `agents/openai.yaml`。新增 5 项测试核对安装副本逐字保留这两个文件、缺少文件时写入前停止、不覆盖已修改的许可证，以及升级旧安装时保留自定义文件并提示备份迁移。
+- 新增中英文贡献说明、本地试用清单、问题/建议模板和 PR 模板，提醒公开反馈不要包含私人课件或笔记。没有新增 Python 依赖、上传步骤或网络调用。
+- CI 保留 Ubuntu、Windows、macOS / Python 3.12，并增加 Ubuntu / Python 3.10，核验文档所列最低版本。实际结果以该提交的 [CI](https://github.com/loglixiaobu/exam-revision-skill/actions/workflows/tests.yml) 为准；本地未运行 Python 3.10 或其他操作系统。
+- 未重新宣称宿主应用安装验收或课程内容正确性。UI 元数据被正确复制，不等于已在 Codex 应用界面验证显示。
 
 ## 本轮 PPTX 支持
 
@@ -76,7 +85,7 @@
 
 ## 平台与CI
 
-已加入GitHub Actions，计划在Ubuntu、Windows、macOS的Python 3.12上运行。**请查看对应提交的实际CI结果**，不能仅凭配置文件或模拟测试宣称三平台全部通过。
+已加入GitHub Actions，在Ubuntu、Windows、macOS的Python 3.12及Ubuntu的Python 3.10上运行。**请查看对应提交的实际CI结果**，不能仅凭配置文件或模拟测试宣称三平台全部通过。
 
 本地实测为Linux；未在用户本地Codex或WorkBuddy应用中完成安装验收。CLI在某操作系统通过，也不等于宿主应用已验证。
 
