@@ -71,6 +71,47 @@ class InstallTests(unittest.TestCase):
         after = {p: (p.stat().st_mtime_ns, p.read_bytes()) for p in self.target.rglob("*") if p.is_file()}
         self.assertEqual(before, after)
 
+    def test_real_install_preserves_license_and_ui_metadata(self):
+        installer.install_skill(ROOT, self.project, install=True)
+        for name in ("LICENSE", "agents/openai.yaml"):
+            with self.subTest(name=name):
+                self.assertEqual((self.target / name).read_bytes(), (ROOT / name).read_bytes())
+        self.assertEqual(installer.install_skill(ROOT, self.project, verify=True)[0], "identical")
+
+    def test_missing_license_stops_before_installing(self):
+        (self.source / "LICENSE").unlink()
+        with self.assertRaisesRegex(installer.InstallError, "Required runtime file is missing"):
+            self.run_install(install=True)
+        self.assertEqual(list(self.project.iterdir()), [])
+
+    def test_missing_ui_metadata_stops_before_installing(self):
+        (self.source / "agents/openai.yaml").unlink()
+        with self.assertRaisesRegex(installer.InstallError, "Required runtime file is missing"):
+            self.run_install(install=True)
+        self.assertEqual(list(self.project.iterdir()), [])
+
+    def test_changed_installed_license_is_preserved(self):
+        self.run_install(install=True)
+        (self.target / "LICENSE").write_text("local notice to review", encoding="utf-8")
+        with self.assertRaisesRegex(installer.InstallError, "modified: LICENSE"):
+            self.run_install(install=True)
+        self.assertEqual((self.target / "LICENSE").read_text(encoding="utf-8"), "local notice to review")
+
+    def test_pre_license_install_preserves_custom_files_and_explains_upgrade(self):
+        self.run_install(install=True)
+        (self.target / "LICENSE").unlink()
+        (self.target / "agents/openai.yaml").unlink()
+        (self.target / "agents").rmdir()
+        (self.target / "SKILL.md").write_text("my customized skill", encoding="utf-8")
+        (self.target / "custom.md").write_text("keep my additions", encoding="utf-8")
+        before = {p.relative_to(self.target): p.read_bytes() for p in self.target.rglob("*") if p.is_file()}
+        with self.assertRaises(installer.InstallError) as error:
+            self.run_install(install=True)
+        for message in ("missing: LICENSE", "missing: agents/openai.yaml", "modified: SKILL.md", "extra: custom.md", "back up", "move it aside", "no overwrite option"):
+            self.assertIn(message, str(error.exception))
+        after = {p.relative_to(self.target): p.read_bytes() for p in self.target.rglob("*") if p.is_file()}
+        self.assertEqual(before, after)
+
     def test_modified_install_is_not_overwritten(self):
         self.run_install(install=True)
         (self.target / "SKILL.md").write_text("my edits", encoding="utf-8")

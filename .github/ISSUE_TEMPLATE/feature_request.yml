@@ -1,0 +1,24 @@
+name: "使用建议 / Feature request"
+description: "告诉我们复习中的真实麻烦 / Tell us what makes revision difficult"
+title: "[Idea] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        中英文都可以。先说你想完成什么，比先设计功能更有帮助。
+        Chinese and English are welcome. Start with what you want to achieve.
+        Issue 是公开的，请不要附上私人课件或个人信息。 Issues are public; keep private materials and personal information out.
+  - type: textarea
+    id: problem
+    attributes:
+      label: "你的使用场景和困难 / Your use case and difficulty"
+      placeholder: "我在复习……时，希望……，目前只能…… / When revising …, I need …, but currently …"
+    validations:
+      required: true
+  - type: textarea
+    id: improvement
+    attributes:
+      label: "怎样才算更好用？ / What would help?"
+      description: "可以描述理想结果或替代办法，不需要技术方案。 / Describe a useful result or workaround; no technical design needed."
+    validations:
+      required: true

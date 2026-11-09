@@ -16,6 +16,8 @@ import sys
 # explicitly added; course inputs, examples, tests, and repository data stay out.
 RUNTIME_FILES = (
     "SKILL.md",
+    "LICENSE",
+    "agents/openai.yaml",
     "requirements.txt",
     "references/input-handling.md",
     "references/output-contract.md",
@@ -209,7 +211,7 @@ def check_dependencies() -> bool:
         print(f"pypdf: {version} (OK)")
     else:
         print(f"pypdf: {version or 'not installed'} (PDF extraction needs pypdf>=5,<7)")
-    print("DOCX extraction and the pack checker use Python's standard library.")
+    print("DOCX/PPTX extraction and the pack checker use Python's standard library.")
     print("No packages were installed; no network or permission settings were changed.")
     return python_ok and pdf_ok
 
