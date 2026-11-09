@@ -228,10 +228,14 @@ def main(argv: list[str] | None = None) -> int:
     action = parser.add_mutually_exclusive_group()
     action.add_argument("--install", action="store_true", help="Copy the skill; without this flag the default is a read-only preview")
     action.add_argument("--verify", action="store_true", help="Check an installed copy against this repository, without writing")
-    parser.add_argument("--check-deps", action="store_true", help="Also check local Python/pypdf availability; never installs anything")
+    parser.add_argument("--check-deps", action="store_true", help="Check Python/pypdf only, or also check after --install/--verify; never installs packages")
     args = parser.parse_args(argv)
     if sys.version_info < (3, 10):
         parser.exit(1, "Python 3.10 or newer is required. No files were changed.\n")
+    # Dependency-only checks must also work with third-party installers, whose
+    # payload may include files outside our strict installation allowlist.
+    if args.check_deps and not (args.install or args.verify):
+        return 0 if check_dependencies() else 2
     try:
         status, target, count = install_skill(
             Path(__file__).resolve().parents[1], args.project,

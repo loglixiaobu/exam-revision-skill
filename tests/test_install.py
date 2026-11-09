@@ -258,11 +258,39 @@ class InstallTests(unittest.TestCase):
         self.assertEqual(sentinel.read_text(), "keep this")
         self.assertEqual(list(self.target.iterdir()), [sentinel])
 
+    def test_cli_dependency_only_check_does_not_inspect_installation(self):
+        for available, expected in ((True, 0), (False, 2)):
+            with self.subTest(available=available), mock.patch.object(
+                installer, "check_dependencies", return_value=available
+            ) as check, mock.patch.object(
+                installer, "install_skill", side_effect=AssertionError("must not inspect installation")
+            ):
+                result = installer.main(["--project", str(self.root / "missing"), "--check-deps"])
+                self.assertEqual(result, expected)
+                check.assert_called_once_with()
+
+    def test_cli_dependency_only_check_accepts_third_party_payload(self):
+        installer.install_skill(ROOT, self.project, install=True)
+        (self.target / "README.md").write_text("extra CLI payload", encoding="utf-8")
+        before = {p: p.read_bytes() for p in self.target.rglob("*") if p.is_file()}
+        result = subprocess.run(
+            [sys.executable, str(self.target / "scripts/install.py"), "--check-deps"],
+            cwd=self.project, text=True, capture_output=True,
+        )
+        self.assertIn(result.returncode, (0, 2), result.stderr)
+        self.assertIn("Python:", result.stdout)
+        self.assertIn("pypdf:", result.stdout)
+        self.assertNotIn("Existing installation differs", result.stderr)
+        self.assertEqual(before, {p: p.read_bytes() for p in self.target.rglob("*") if p.is_file()})
+        with mock.patch.object(installer, "check_dependencies") as check, contextlib.redirect_stderr(io.StringIO()):
+            self.assertEqual(installer.main(["--project", str(self.project), "--verify", "--check-deps"]), 1)
+            check.assert_not_called()
+
     def test_cli_dependencies_missing_returns_two_without_writes(self):
-        with mock.patch.object(installer, "install_skill", return_value=("preview", self.target, len(installer.RUNTIME_FILES))), mock.patch.object(installer.importlib.util, "find_spec", return_value=None), contextlib.redirect_stdout(io.StringIO()) as output:
+        with mock.patch.object(installer.importlib.util, "find_spec", return_value=None), contextlib.redirect_stdout(io.StringIO()) as output:
             result = installer.main(["--project", str(self.project), "--check-deps"])
         self.assertEqual(result, 2)
-        self.assertIn("No files were changed", output.getvalue())
+        self.assertIn("No packages were installed", output.getvalue())
         self.assertEqual(list(self.project.iterdir()), [])
 
     def test_dependency_check_rejects_out_of_range_version(self):

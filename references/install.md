@@ -24,6 +24,19 @@ python3 scripts/install.py --project "/path/to/your project" --verify --check-de
 
 安装后，在目标项目中开启新的 Codex 对话，要求使用 `exam-revision`。若技能列表尚未显示它，可以请 Codex 读取项目中的 `.agents/skills/exam-revision/SKILL.md` 并按其步骤工作。
 
+## skills CLI 安装与依赖检查
+
+也可通过 skills CLI 安装到当前项目（需要 Node.js/npm；会联网下载）：
+
+```sh
+npx skills@1.7.6 add loglixiaobu/exam-revision-skill --skill exam-revision --agent codex
+python3 .agents/skills/exam-revision/scripts/install.py --check-deps
+```
+
+单独的 `--check-deps` 只检查 Python/pypdf，不读取或校验安装目录，也不创建文件。与 `--install` 或 `--verify` 同用时，先执行对应操作，成功后再检查依赖。
+
+skills CLI 可能复制仓库中的文档、测试和示例；本项目安装脚本仅复制 13 个运行文件。因此，`--verify` 仅适用于本项目安装脚本的严格文件集合，对 skills CLI 安装可能报告多余文件。这不表示 CLI 安装失败；不要为消除提示删除自己的文件，也不要混用两种安装方式来覆盖已有安装。技能可安装不代表已被 skills.sh 搜索目录收录。
+
 ## 已有安装和安全边界
 
 - 从早期版本升级时，可能提示缺少 `LICENSE` 或 `agents/openai.yaml`，因为新版本增加了这两个文件。**这不是自动修复或覆盖的信号**：先备份并将整个旧安装目录移开，再安装新版，之后逐项比较并迁移自定义内容。也可以在全新课程项目试用，旧项目保持不变；不要用空文件消除差异。
